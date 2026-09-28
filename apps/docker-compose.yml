@@ -4,12 +4,13 @@
 #
 # Split layout — infra and app code are separate roots:
 #   /opt/omni-infra/apps/docker-compose.yml   ← this file (infra only)
-#   /opt/omni-app/order-service/
-#   /opt/omni-app/inventory-service/
-#   /opt/omni-app/notification-service/
-#   /opt/omni-app/omni-client/
+#   /opt/omni-app/...                        ← source builds (order/notification/client)
 #
-# Build contexts use APP_ROOT (default: ../../omni-app from apps/)
+# inventory-service: image from Artifact Registry
+#   image = ${GCP_AR_REPO}/inventory-service:staging
+#   set GCP_AR_REPO in this folder's .env (compose loads it on pull/up)
+#
+# Other services: build from APP_ROOT (default: ../../omni-app)
 # container_name must match Traefik routes.yml backends
 
 services:
@@ -83,8 +84,8 @@ services:
 
   inventory-service:
     container_name: inventory-service
-    build:
-      context: ${APP_ROOT:-../../omni-app}/inventory-service
+    # CI pushes ${GCP_AR_REPO}/inventory-service:staging (see inventory-service deploy-staging workflow)
+    image: ${GCP_AR_REPO}/inventory-service:staging
     restart: unless-stopped
     environment:
       PORT: "3001"
