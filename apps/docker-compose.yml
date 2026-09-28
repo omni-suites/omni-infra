@@ -2,15 +2,10 @@
 # Requires: Traefik up first (`docker compose up -d` in ../traefik)
 # Public hostnames live in ../traefik/dynamic/routes.yml
 #
-# Split layout — infra and app code are separate roots:
-#   /opt/omni-infra/apps/docker-compose.yml   ← this file (infra only)
-#   /opt/omni-app/...                        ← source builds (order/notification/client)
+# App images from Artifact Registry (CI: each service's deploy-staging workflow):
+#   ${GCP_AR_REPO}/<service>:staging
+# Set GCP_AR_REPO in this folder's .env
 #
-# inventory-service: image from Artifact Registry
-#   image = ${GCP_AR_REPO}/inventory-service:staging
-#   set GCP_AR_REPO in this folder's .env (compose loads it on pull/up)
-#
-# Other services: build from APP_ROOT (default: ../../omni-app)
 # container_name must match Traefik routes.yml backends
 
 services:
@@ -63,8 +58,7 @@ services:
 
   order-service:
     container_name: order-service
-    build:
-      context: ${APP_ROOT:-../../omni-app}/order-service
+    image: ${GCP_AR_REPO}/order-service:staging
     restart: unless-stopped
     environment:
       PORT: "3000"
@@ -84,7 +78,6 @@ services:
 
   inventory-service:
     container_name: inventory-service
-    # CI pushes ${GCP_AR_REPO}/inventory-service:staging (see inventory-service deploy-staging workflow)
     image: ${GCP_AR_REPO}/inventory-service:staging
     restart: unless-stopped
     environment:
@@ -99,8 +92,7 @@ services:
 
   notification-service:
     container_name: notification-service
-    build:
-      context: ${APP_ROOT:-../../omni-app}/notification-service
+    image: ${GCP_AR_REPO}/notification-service:staging
     restart: unless-stopped
     environment:
       PORT: "3002"
@@ -114,8 +106,7 @@ services:
 
   omni-client:
     container_name: omni-client
-    build:
-      context: ${APP_ROOT:-../../omni-app}/omni-client
+    image: ${GCP_AR_REPO}/omni-client:staging
     restart: unless-stopped
     environment:
       VITE_API_ORDER_URL: ${VITE_API_ORDER_URL:-https://order-svc.test-suites-poc.work.gd}

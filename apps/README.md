@@ -1,26 +1,13 @@
 # Deploy apps stack (behind Traefik)
 #
 # Public hostnames: ../traefik/dynamic/routes.yml
-# This compose only joins `edge` + stable container_name for Traefik backends.
+# App images: ${GCP_AR_REPO}/<service>:staging (CI push from each app repo)
 #
-# Split roots — infra stays under omni-infra; app code under omni-app:
+#   /opt/omni-infra/apps/     ← this compose + .env (set GCP_AR_REPO)
+#   Traefik must be up first (network `edge`)
 #
-#   /opt/omni-infra/          ← infra only
-#     apps/                   ← compose + .env (this folder)
-#     traefik/
-#     squash-tm/
-#     report-portal/
+# Start:
+#   cd /opt/omni-infra/apps && docker compose pull && docker compose up -d
 #
-#   /opt/omni-app/            ← services only
-#     order-service/
-#     inventory-service/
-#     notification-service/
-#     omni-client/
-#
-# APP_ROOT defaults to ../../omni-app (from apps/ → /opt/omni-app).
-# Local monorepo only: set APP_ROOT=../../app in .env
-#
-# Start (after Traefik):
-#   cd /opt/omni-infra/apps && docker compose up -d --build
-#
-# Note: *.work.gd may hit Let's Encrypt rate limits (DEFAULT CERT).
+# Per-service deploy: each app's .github/workflows/deploy-staging.yaml
+# pulls/restarts only that service on the self-hosted staging runner.
