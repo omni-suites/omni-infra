@@ -1,0 +1,38 @@
+# Central Traefik (edge) for all omni-suites stacks
+# Static config: CLI flags below
+# Routes/hostnames: ./dynamic/routes.yml (file provider)
+
+services:
+  traefik:
+    image: traefik:v3.7
+    container_name: traefik
+    restart: unless-stopped
+    env_file:
+      - .env
+    command:
+      - --api.dashboard=false
+      - --log.level=INFO
+      - --entrypoints.web.address=:80
+      - --entrypoints.websecure.address=:443
+      - --providers.file.directory=/etc/traefik/dynamic
+      - --providers.file.watch=true
+      - --certificatesresolvers.le.acme.storage=/letsencrypt/acme.json
+      - --certificatesresolvers.le.acme.httpchallenge=true
+      - --certificatesresolvers.le.acme.httpchallenge.entrypoint=web
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - ./dynamic:/etc/traefik/dynamic:ro
+      - letsencrypt:/letsencrypt
+    environment:
+      TRAEFIK_CERTIFICATESRESOLVERS_LE_ACME_EMAIL: ${ACME_EMAIL}
+    networks:
+      - edge
+
+networks:
+  edge:
+    name: edge
+
+volumes:
+  letsencrypt:

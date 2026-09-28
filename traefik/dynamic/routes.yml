@@ -1,0 +1,112 @@
+# Central edge routes (file provider).
+# Backends must use stable container_name and join network `edge`.
+# Change hostnames here (not in apps/squash/report-portal composes).
+
+http:
+  middlewares:
+    https-redirect:
+      redirectScheme:
+        scheme: https
+        permanent: true
+
+  routers:
+    # --- apps ---
+    frontend:
+      rule: Host(`frontend-svc.test-suites-poc.work.gd`)
+      entryPoints: [websecure]
+      service: frontend
+      tls:
+        certResolver: le
+    frontend-http:
+      rule: Host(`frontend-svc.test-suites-poc.work.gd`)
+      entryPoints: [web]
+      middlewares: [https-redirect]
+      service: frontend
+
+    order:
+      rule: Host(`order-svc.test-suites-poc.work.gd`)
+      entryPoints: [websecure]
+      service: order
+      tls:
+        certResolver: le
+    order-http:
+      rule: Host(`order-svc.test-suites-poc.work.gd`)
+      entryPoints: [web]
+      middlewares: [https-redirect]
+      service: order
+
+    inventory:
+      rule: Host(`inventory-svc.test-suites-poc.work.gd`)
+      entryPoints: [websecure]
+      service: inventory
+      tls:
+        certResolver: le
+    inventory-http:
+      rule: Host(`inventory-svc.test-suites-poc.work.gd`)
+      entryPoints: [web]
+      middlewares: [https-redirect]
+      service: inventory
+
+    notification:
+      rule: Host(`notification-svc.test-suites-poc.work.gd`)
+      entryPoints: [websecure]
+      service: notification
+      tls:
+        certResolver: le
+    notification-http:
+      rule: Host(`notification-svc.test-suites-poc.work.gd`)
+      entryPoints: [web]
+      middlewares: [https-redirect]
+      service: notification
+
+    # --- squash-tm (app path is /squash) ---
+    squash:
+      rule: Host(`squash-tcms.test-suites-poc.work.gd`)
+      entryPoints: [websecure]
+      service: squash
+      tls:
+        certResolver: le
+    squash-http:
+      rule: Host(`squash-tcms.test-suites-poc.work.gd`)
+      entryPoints: [web]
+      middlewares: [https-redirect]
+      service: squash
+
+    # --- report-portal (internal Traefik gateway on :8080) ---
+    reportportal:
+      rule: Host(`report-portal.test-suites-poc.work.gd`)
+      entryPoints: [websecure]
+      service: reportportal
+      tls:
+        certResolver: le
+    reportportal-http:
+      rule: Host(`report-portal.test-suites-poc.work.gd`)
+      entryPoints: [web]
+      middlewares: [https-redirect]
+      service: reportportal
+
+  services:
+    frontend:
+      loadBalancer:
+        servers:
+          - url: http://omni-client:80
+    order:
+      loadBalancer:
+        servers:
+          - url: http://order-service:3000
+    inventory:
+      loadBalancer:
+        servers:
+          - url: http://inventory-service:3001
+    notification:
+      loadBalancer:
+        servers:
+          - url: http://notification-service:3002
+    squash:
+      loadBalancer:
+        servers:
+          - url: http://squash-tm:8080
+    reportportal:
+      loadBalancer:
+        servers:
+          - url: http://report-portal-gateway:8080

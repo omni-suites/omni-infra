@@ -1,0 +1,140 @@
+# App stack behind central Traefik (network: edge)
+# Requires: Traefik up first (`docker compose up -d` in ../traefik)
+# Public hostnames live in ../traefik/dynamic/routes.yml
+#
+# Split layout — infra and app code are separate roots:
+#   /opt/omni-infra/apps/docker-compose.yml   ← this file (infra only)
+#   /opt/omni-app/order-service/
+#   /opt/omni-app/inventory-service/
+#   /opt/omni-app/notification-service/
+#   /opt/omni-app/omni-client/
+#
+# Build contexts use APP_ROOT (default: ../../omni-app from apps/)
+# container_name must match Traefik routes.yml backends
+
+services:
+  postgres-db:
+    image: postgres:15-alpine
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+      POSTGRES_DB: ${POSTGRES_DB}
+    volumes:
+      - postgres-data:/var/lib/postgresql/data
+    networks:
+      - internal
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER} -d ${POSTGRES_DB}"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+    restart: unless-stopped
+
+  mysql-db:
+    image: mysql:8.0
+    environment:
+      MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD}
+      MYSQL_DATABASE: ${MYSQL_DATABASE}
+    volumes:
+      - mysql-data:/var/lib/mysql
+    networks:
+      - internal
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "127.0.0.1", "-uroot", "-p${MYSQL_ROOT_PASSWORD}"]
+      interval: 5s
+      timeout: 5s
+      retries: 20
+      start_period: 20s
+    restart: unless-stopped
+
+  mongo-db:
+    image: mongo:6-jammy
+    volumes:
+      - mongo-data:/data/db
+    networks:
+      - internal
+    healthcheck:
+      test: ["CMD", "mongosh", "--eval", "db.adminCommand('ping')"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+    restart: unless-stopped
+
+  order-service:
+    container_name: order-service
+    build:
+      context: ${APP_ROOT:-../../omni-app}/order-service
+    restart: unless-stopped
+    environment:
+      PORT: "3000"
+      DATABASE_URL: ${ORDER_DATABASE_URL}
+      INVENTORY_SERVICE_URL: ${INVENTORY_SERVICE_URL:-http://inventory-service:3001}
+      NOTIFICATION_SERVICE_URL: ${NOTIFICATION_SERVICE_URL:-http://notification-service:3002}
+    depends_on:
+      postgres-db:
+        condition: service_healthy
+      inventory-service:
+        condition: service_started
+      notification-service:
+        condition: service_started
+    networks:
+      - internal
+      - edge
+
+  inventory-service:
+    container_name: inventory-service
+    build:
+      context: ${APP_ROOT:-../../omni-app}/inventory-service
+    restart: unless-stopped
+    environment:
+      PORT: "3001"
+      DATABASE_URL: ${INVENTORY_DATABASE_URL}
+    depends_on:
+      mysql-db:
+        condition: service_healthy
+    networks:
+      - internal
+      - edge
+
+  notification-service:
+    container_name: notification-service
+    build:
+      context: ${APP_ROOT:-../../omni-app}/notification-service
+    restart: unless-stopped
+    environment:
+      PORT: "3002"
+      DATABASE_URL: ${NOTIFICATION_DATABASE_URL}
+    depends_on:
+      mongo-db:
+        condition: service_healthy
+    networks:
+      - internal
+      - edge
+
+  omni-client:
+    container_name: omni-client
+    build:
+      context: ${APP_ROOT:-../../omni-app}/omni-client
+    restart: unless-stopped
+    environment:
+      VITE_API_ORDER_URL: ${VITE_API_ORDER_URL:-https://order-svc.test-suites-poc.work.gd}
+      VITE_API_INVENTORY_URL: ${VITE_API_INVENTORY_URL:-https://inventory-svc.test-suites-poc.work.gd}
+      VITE_API_NOTIFICATION_URL: ${VITE_API_NOTIFICATION_URL:-https://notification-svc.test-suites-poc.work.gd}
+    depends_on:
+      - order-service
+      - inventory-service
+      - notification-service
+    networks:
+      - edge
+
+networks:
+  internal:
+    name: apps-internal
+  edge:
+    external: true
+    name: edge
+
+volumes:
+  postgres-data:
+  mysql-data:
+  mongo-data:

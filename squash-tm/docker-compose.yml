@@ -1,0 +1,47 @@
+services:
+  squash-tm-pg:
+    container_name: squash-tm-pg
+    image: postgres:15
+    environment:
+      POSTGRES_DB: ${DB_DATABASE}
+      POSTGRES_USER: ${DB_USERNAME}
+      POSTGRES_PASSWORD: ${DB_PASSWORD}
+    volumes:
+      - squash-tm-pg-data:/var/lib/postgresql/data
+    networks:
+      - internal
+    restart: unless-stopped
+
+  squash-tm:
+    container_name: squash-tm
+    image: squashtest/squash
+    depends_on:
+      - squash-tm-pg
+    environment:
+      SPRING_PROFILES_ACTIVE: ${DB_TYPE}
+      SPRING_DATASOURCE_URL: jdbc:${DB_TYPE}://${DB_HOST}:${DB_PORT}/${DB_DATABASE}
+      SPRING_DATASOURCE_USERNAME: ${DB_USERNAME}
+      SPRING_DATASOURCE_PASSWORD: ${DB_PASSWORD}
+      SQTM_DB_TYPE: ${DB_TYPE}
+      SQTM_DB_USERNAME: ${DB_USERNAME}
+      SQTM_DB_PASSWORD: ${DB_PASSWORD}
+      SQTM_DB_NAME: ${DB_DATABASE}
+      SQTM_DB_HOST: ${DB_HOST}
+      SQTM_DB_PORT: ${DB_PORT}
+    volumes:
+      - squash-tm-logs:/opt/squash-tm/logs
+    networks:
+      - internal
+      - edge
+    restart: unless-stopped
+
+networks:
+  internal:
+    name: squash-internal
+  edge:
+    external: true
+    name: edge
+
+volumes:
+  squash-tm-pg-data:
+  squash-tm-logs:
