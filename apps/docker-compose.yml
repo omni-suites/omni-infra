@@ -45,6 +45,12 @@ services:
 
   mongo-db:
     image: mongo:6-jammy
+    container_name: mongo-db
+    entrypoint: [
+      "/bin/sh",
+      "-c",
+      "mongod --replSet rs0 --bind_ip_all & MONGOD_PID=$$!; sleep 4; mongosh --eval 'rs.initiate({_id: \"rs0\", members: [{_id: 0, host: \"mongo-db:27017\"}]})' || true; wait $$MONGOD_PID"
+    ]
     volumes:
       - mongo-data:/data/db
     networks:
