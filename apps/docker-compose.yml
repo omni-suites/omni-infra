@@ -125,6 +125,30 @@ services:
     networks:
       - edge
 
+  omni-integration:
+    container_name: omni-integration
+    image: ${GCP_AR_REPO}/omni-integration:staging
+    restart: unless-stopped
+    environment:
+      PORT: "3003"
+      DATABASE_URL: ${INTEGRATION_DATABASE_URL}
+      LINEAR_WEBHOOK_SECRET: ${LINEAR_WEBHOOK_SECRET}
+      LINEAR_TEAM_ID: ${LINEAR_TEAM_ID}
+      LINEAR_TEAM_NAME: ${LINEAR_TEAM_NAME}
+      LINEAR_READY_LABEL: ${LINEAR_READY_LABEL}
+      SQUASH_BASE_URL: ${SQUASH_BASE_URL}
+      SQUASH_API_TOKEN: ${SQUASH_API_TOKEN}
+      SQUASH_USER: ${SQUASH_USER}
+      SQUASH_PASSWORD: ${SQUASH_PASSWORD}
+      SQUASH_PROJECT_ID: ${SQUASH_PROJECT_ID}
+      SQUASH_PROJECT_NAME: ${SQUASH_PROJECT_NAME}
+    depends_on:
+      postgres-db:
+        condition: service_healthy
+    networks:
+      - internal
+      - edge
+
 networks:
   internal:
     name: apps-internal

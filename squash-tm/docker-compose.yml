@@ -28,6 +28,7 @@ services:
       SQTM_DB_NAME: ${DB_DATABASE}
       SQTM_DB_HOST: ${DB_HOST}
       SQTM_DB_PORT: ${DB_PORT}
+      SQUASH_REST_API_JWT_SECRET: ${SQUASH_REST_API_JWT_SECRET}
     volumes:
       - squash-tm-logs:/opt/squash-tm/logs
     networks:

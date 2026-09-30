@@ -59,6 +59,19 @@ http:
       middlewares: [https-redirect]
       service: notification
 
+    # --- omni-integration (Linear webhooks) ---
+    hooks:
+      rule: Host(`hooks.test-suites-poc.work.gd`)
+      entryPoints: [websecure]
+      service: hooks
+      tls:
+        certResolver: le
+    hooks-http:
+      rule: Host(`hooks.test-suites-poc.work.gd`)
+      entryPoints: [web]
+      middlewares: [https-redirect]
+      service: hooks
+
     # --- squash-tm (app path is /squash) ---
     squash:
       rule: Host(`squash-tcms.test-suites-poc.work.gd`)
@@ -102,6 +115,10 @@ http:
       loadBalancer:
         servers:
           - url: http://notification-service:3002
+    hooks:
+      loadBalancer:
+        servers:
+          - url: http://omni-integration:3003
     squash:
       loadBalancer:
         servers:
