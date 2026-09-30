@@ -146,6 +146,7 @@ services:
       DISCORD_PUBLIC_KEY: ${DISCORD_PUBLIC_KEY}
       DISCORD_BOT_TOKEN: ${DISCORD_BOT_TOKEN}
       DISCORD_GITHUB_PAT_TOKEN: ${DISCORD_GITHUB_PAT_TOKEN}
+      DISCORD_TEST_RELEASES_CHANNEL_ID: ${DISCORD_TEST_RELEASES_CHANNEL_ID}
     depends_on:
       postgres-db:
         condition: service_healthy
